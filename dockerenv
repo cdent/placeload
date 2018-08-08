@@ -1,6 +1,6 @@
-# use an internal database
 # create tables
 DB_SYNC=True
 DB_CLEAN=True
+DB_STRING=postgresql+psycopg2://cdent@192.168.1.76/placement?client_encoding=utf8
 # use simple auth (each request gets a header of "x-auth-token: admin")
 AUTH_STRATEGY=noauth2
