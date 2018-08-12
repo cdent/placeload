@@ -3,8 +3,8 @@
 
 tagv:
 	git tag -s \
-		-m `python -c 'import placeload; print placeload.__version__'` \
-		`python -c 'import placeload; print placeload.__version__'`
+		-m `python -c 'import placeload; print(placeload.__version__)'` \
+		`python -c 'import placeload; print(placeload.__version__)'`
 	git push origin master --tags
 
 dist:
