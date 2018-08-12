@@ -15,4 +15,9 @@ Call it like::
 
 * **count** is the number of resource providers to create
 
+It can be used with a `placedock`_ `container`_ if you need a quick
+way to start a placement.
+
 .. _placement service: https://developer.openstack.org/api-ref/placement/
+.. _placedock: https://github.com/cdent/placedock
+.. _container: https://hub.docker.com/r/cdent/placedock/
