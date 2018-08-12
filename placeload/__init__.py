@@ -7,6 +7,8 @@ import uuid
 import aiohttp
 import asyncio
 
+__version__ = '0.1.0'
+
 
 DEFAULT_HEADERS = {
         # Using latest is usually dangerous but we want it here.
