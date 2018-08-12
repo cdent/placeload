@@ -187,9 +187,13 @@ def start(service, count):
     print('\n'.join(AGGREGATES))
 
 
-if __name__ == '__main__':
+def run():
     service = sys.argv[1]
     count = 500
     if len(sys.argv) == 3:
         count = int(sys.argv[2])
     start(service, count)
+
+
+if __name__ == '__main__':
+    run()
