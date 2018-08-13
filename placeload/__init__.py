@@ -67,7 +67,7 @@ async def version(session, url):
                 'Unable to reach %s: %d' % (url, resp.status))
         data = await resp.json()
         version = data['versions'][0]['max_version']
-        print(f'Placement is {version}')
+        print('Placement is %s' % version)
 
 
 async def verify(service):
@@ -93,9 +93,9 @@ async def _set_agg(session, url):
                 print('a', end='', flush=True)
             else:
                 uu = urlsplit(url).path.rsplit('/')[-2]
-                print(f'X{resp.status}, {uu}', flush=True)
+                print('X%s, %s' % (resp.status, uu), flush=True)
     except aiohttp.client_exceptions.ClientError as exc:
-        print(f'C{url}...{exc}')
+        print('C%s...%s' % (url, exc))
 
 
 async def _set_inv(session, url):
@@ -117,9 +117,9 @@ async def _set_inv(session, url):
                     await _set_agg(isession, agg_url)
             else:
                 uu = urlsplit(url).path.rsplit('/')[-2]
-                print(f'X{resp.status}, {uu}', flush=True)
+                print('X%s, %s' % (resp.status, uu), flush=True)
     except aiohttp.client_exceptions.ClientError as exc:
-        print(f'C{url}...{exc}')
+        print('C%s...%s' % (url, exc))
 
 
 async def _create_rp(session, url, uu):
@@ -135,15 +135,15 @@ async def _create_rp(session, url, uu):
         async with session.post(url, json=data) as resp:
             if resp.status == 200:
                 print('r', end='', flush=True)
-                inv_url = urljoin(f'{url}/', f'{uu}/inventories')
+                inv_url = urljoin('%s/' % url, '%s/inventories' % uu)
                 # we need a different session otherwise the one we had closes
                 async with aiohttp.ClientSession(
                         headers=DEFAULT_HEADERS) as isession:
                     await _set_inv(isession, inv_url)
             else:
-                print(f'X{resp.status}, {uu}', end='', flush=True)
+                print('X%s, %s' % (resp.status, uu), flush=True)
     except aiohttp.client_exceptions.ClientError as exc:
-        print(f'{url}...{exc}')
+        print('C%s...%s' % (url, exc))
 
 
 async def create_rp(service, uu, semaphore):
