@@ -1,7 +1,7 @@
 
 import sys
 import itertools
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urlsplit
 import uuid
 
 import aiohttp
@@ -135,7 +135,7 @@ async def _create_rp(session, url, uu):
         async with session.post(url, json=data) as resp:
             if resp.status == 200:
                 print('r', end='', flush=True)
-                inv_url = urljoin('%s/' % url, '%s/inventories' % uu)
+                inv_url = '%s/%s/inventories' % (url, uu)
                 # we need a different session otherwise the one we had closes
                 async with aiohttp.ClientSession(
                         headers=DEFAULT_HEADERS) as isession:
@@ -151,7 +151,7 @@ async def create_rp(service, uu, semaphore):
     # We need a semaphore outside the session, otherwise when talking
     # through the Docker for Mac proxy things go terribly wrong because
     # sockets are unavailable.
-    url = urljoin(service, 'resource_providers')
+    url = '%s/%s' % (service.rstrip('/'), 'resource_providers')
     async with semaphore:
         async with aiohttp.ClientSession(headers=DEFAULT_HEADERS) as session:
             await _create_rp(session, url, uu)
