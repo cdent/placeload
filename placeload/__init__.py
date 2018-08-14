@@ -7,7 +7,7 @@ import uuid
 import aiohttp
 import asyncio
 
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 
 
 DEFAULT_HEADERS = {
