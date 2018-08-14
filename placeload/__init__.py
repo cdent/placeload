@@ -93,7 +93,7 @@ async def _set_agg(session, url):
                 print('a', end='', flush=True)
             else:
                 uu = urlsplit(url).path.rsplit('/')[-2]
-                print('X%s, %s' % (resp.status, uu), flush=True)
+                print('A%s, %s' % (resp.status, uu), flush=True)
     except aiohttp.client_exceptions.ClientError as exc:
         print('C%s...%s' % (url, exc))
 
@@ -117,7 +117,7 @@ async def _set_inv(session, url):
                     await _set_agg(isession, agg_url)
             else:
                 uu = urlsplit(url).path.rsplit('/')[-2]
-                print('X%s, %s' % (resp.status, uu), flush=True)
+                print('I%s, %s' % (resp.status, uu), flush=True)
     except aiohttp.client_exceptions.ClientError as exc:
         print('C%s...%s' % (url, exc))
 
@@ -141,7 +141,7 @@ async def _create_rp(session, url, uu):
                         headers=DEFAULT_HEADERS) as isession:
                     await _set_inv(isession, inv_url)
             else:
-                print('X%s, %s' % (resp.status, uu), flush=True)
+                print('R%s, %s' % (resp.status, uu), flush=True)
     except aiohttp.client_exceptions.ClientError as exc:
         print('C%s...%s' % (url, exc))
 
