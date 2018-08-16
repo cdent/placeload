@@ -1,3 +1,4 @@
 aiohttp
 cchardet
 aiodns
+os_traits

@@ -6,6 +6,7 @@ import uuid
 
 import aiohttp
 import asyncio
+import os_traits
 
 __version__ = '0.2.2'
 
@@ -32,6 +33,18 @@ AGG_CHUNKS = [
 ]
 AGG_CYCLE = itertools.cycle(AGG_CHUNKS)
 
+# This traits chosen arbitrarily.
+TRAITS = [
+    os_traits.hw.cpu.x86.AVX2,
+    os_traits.hw.cpu.x86.SSE2,
+    os_traits.storage.disk.SSD,
+]
+TRAIT_CHUNKS = [
+    TRAITS[0:1],
+    TRAITS[0:2],
+    TRAITS[0:3],
+]
+TRAIT_CYCLE = itertools.cycle(TRAIT_CHUNKS)
 
 # For now we default to allocation_ratio always being 1 because
 # we don't want to think.
@@ -75,6 +88,28 @@ async def verify(service):
         await version(session, service)
 
 
+async def _set_trait(session, url):
+    """Set some traits via TRAIT_CHUNKS."""
+    traits = TRAIT_CYCLE.__next__()
+    data = {
+            # This use of static generations is perhaps icky
+            # but it is the result of an expected flow and
+            # ordering.
+            'resource_provider_generation': 2,
+            'traits': traits,
+    }
+    try:
+        async with session.put(url, json=data) as resp:
+            if resp.status == 200:
+                print('t', end='', flush=True)
+            else:
+                uu = urlsplit(url).path.rsplit('/')[-2]
+                print('T%s, %s' % (resp.status, uu), flush=True)
+                print(await resp.text())
+    except aiohttp.client_exceptions.ClientError as exc:
+        print('C%s...%s' % (url, exc))
+
+
 async def _set_agg(session, url):
     """Set aggregates.
 
@@ -91,6 +126,10 @@ async def _set_agg(session, url):
         async with session.put(url, json=data) as resp:
             if resp.status == 200:
                 print('a', end='', flush=True)
+                trait_url = url.replace('aggregates', 'traits')
+                async with aiohttp.ClientSession(
+                        headers=DEFAULT_HEADERS) as isession:
+                    await _set_trait(isession, trait_url)
             else:
                 uu = urlsplit(url).path.rsplit('/')[-2]
                 print('A%s, %s' % (resp.status, uu), flush=True)
