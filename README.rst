@@ -10,10 +10,10 @@ Uses asyncio to create them quickly.
 
 Call it like::
 
-    placeload <placement service url> [count]
-
+    placeload <placement service url> [count] [semaphore_count]
 
 * **count** is the number of resource providers to create
+* **semaphore_count** is the number of concurrent
 
 It can be used with a `placedock`_ `container`_ if you need a quick
 way to start a placement.

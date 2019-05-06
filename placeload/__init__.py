@@ -8,7 +8,7 @@ import aiohttp
 import asyncio
 import os_traits
 
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 
 
 DEFAULT_HEADERS = {
@@ -196,11 +196,11 @@ async def create_rp(service, uu, semaphore):
             await _create_rp(session, url, uu)
 
 
-async def create(service, count):
-    """Create 500 separate resource providers with inventory."""
+async def create(service, count, semaphore_count):
+    """Create count separate resource providers with inventory."""
     tasks = []
     uuids = []
-    semaphore = asyncio.Semaphore(count//min(5, count))
+    semaphore = asyncio.Semaphore(semaphore_count)
     while count:
         uuids.append(str(uuid.uuid4()))
         count -= 1
@@ -209,7 +209,7 @@ async def create(service, count):
     await asyncio.gather(*tasks)
 
 
-def start(service, count):
+def start(service, count, semaphore_count):
     loop = asyncio.get_event_loop()
 
     # Confirm the presence of a working placement service at the URL
@@ -222,7 +222,7 @@ def start(service, count):
 
     # Create some resource providers with inventory described in
     # INVENTORY_DICT and aggregates from AGGREGATES.
-    loop.run_until_complete(create(service, count))
+    loop.run_until_complete(create(service, count, semaphore_count))
     # output the aggregates so we can query for them easily
     print()
     print('\n'.join(AGGREGATES))
@@ -231,9 +231,12 @@ def start(service, count):
 def run():
     service = sys.argv[1]
     count = 500
-    if len(sys.argv) == 3:
+    semaphore_count = 200
+    if len(sys.argv) >= 3:
         count = int(sys.argv[2])
-    start(service, count)
+    if len(sys.argv) >= 4:
+        semaphore_count = int(sys.argv[3])
+    start(service, count, semaphore_count)
 
 
 if __name__ == '__main__':
