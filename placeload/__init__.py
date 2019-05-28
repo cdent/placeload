@@ -46,6 +46,12 @@ TRAIT_CHUNKS = [
 ]
 TRAIT_CYCLE = itertools.cycle(TRAIT_CHUNKS)
 
+# Traits used by child GPU providers.
+GPU_TRAITS = [
+    'HW_GPU_RESOLUTION_W1366H768',
+    'HW_GPU_RESOLUTION_W1440H900',
+]
+
 # For now we default to allocation_ratio always being 1 because
 # we don't want to think.
 # Simple homogeneous topology for now.
@@ -65,6 +71,12 @@ INVENTORY_DICT = {
             'min_unit': 1,
             'max_unit': 16,
         },
+}
+
+GPU_INV_DICT = {
+        'VGPU': {
+            'total': 5,
+        }
 }
 
 
@@ -88,14 +100,18 @@ async def verify(service):
         await version(session, service)
 
 
-async def _set_trait(session, url):
+async def _set_trait(session, url, traits=None):
     """Set some traits via TRAIT_CHUNKS."""
-    traits = TRAIT_CYCLE.__next__()
+    if not traits:
+        traits = TRAIT_CYCLE.__next__()
+        generation = 2
+    else:
+        generation = 1
     data = {
             # This use of static generations is perhaps icky
             # but it is the result of an expected flow and
             # ordering.
-            'resource_provider_generation': 2,
+            'resource_provider_generation': generation,
             'traits': traits,
     }
     try:
@@ -105,7 +121,6 @@ async def _set_trait(session, url):
             else:
                 uu = urlsplit(url).path.rsplit('/')[-2]
                 print('T%s, %s' % (resp.status, uu), flush=True)
-                print(await resp.text())
     except aiohttp.client_exceptions.ClientError as exc:
         print('C%s...%s' % (url, exc))
 
@@ -137,23 +152,28 @@ async def _set_agg(session, url):
         print('C%s...%s' % (url, exc))
 
 
-async def _set_inv(session, url):
+async def _set_inv(session, url, inv=None):
     """Set inventory.
 
     Everybody gets the same inventory.
     """
+    if not inv:
+        our_inv = INVENTORY_DICT
+    else:
+        our_inv = inv
     data = {
             'resource_provider_generation': 0,
-            'inventories': INVENTORY_DICT,
+            'inventories': our_inv
     }
     try:
         async with session.put(url, json=data) as resp:
             if resp.status == 200:
                 print('i', end='', flush=True)
                 agg_url = url.replace('inventories', 'aggregates')
-                async with aiohttp.ClientSession(
-                        headers=DEFAULT_HEADERS) as isession:
-                    await _set_agg(isession, agg_url)
+                if not inv:
+                    async with aiohttp.ClientSession(
+                            headers=DEFAULT_HEADERS) as isession:
+                        await _set_agg(isession, agg_url)
             else:
                 uu = urlsplit(url).path.rsplit('/')[-2]
                 print('I%s, %s' % (resp.status, uu), flush=True)
@@ -161,7 +181,7 @@ async def _set_inv(session, url):
         print('C%s...%s' % (url, exc))
 
 
-async def _create_rp(session, url, uu):
+async def _create_rp(session, url, uu, parent=None, traits=None):
     """The guts of creating one resource provider.
 
     If the resource provider is successfully created, set its inventory.
@@ -170,15 +190,35 @@ async def _create_rp(session, url, uu):
             'uuid': uu,
             'name': uu,
     }
+    if parent:
+        data['parent_provider_uuid'] = parent
+
     try:
         async with session.post(url, json=data) as resp:
             if resp.status == 200:
                 print('r', end='', flush=True)
                 inv_url = '%s/%s/inventories' % (url, uu)
                 # we need a different session otherwise the one we had closes
-                async with aiohttp.ClientSession(
-                        headers=DEFAULT_HEADERS) as isession:
-                    await _set_inv(isession, inv_url)
+                if not parent:
+                    async with aiohttp.ClientSession(
+                            headers=DEFAULT_HEADERS) as isession:
+                        await _set_inv(isession, inv_url)
+                        child_uu = str(uuid.uuid4())
+                        async with aiohttp.ClientSession(
+                                headers=DEFAULT_HEADERS) as csession:
+                            await _create_rp(csession, url, child_uu, parent=uu, traits=[GPU_TRAITS[0]])
+                            child_uu = str(uuid.uuid4())
+                            async with aiohttp.ClientSession(
+                                    headers=DEFAULT_HEADERS) as csession:
+                                await _create_rp(csession, url, child_uu, parent=uu, traits=[GPU_TRAITS[1]])
+                else:
+                    async with aiohttp.ClientSession(
+                            headers=DEFAULT_HEADERS) as isession:
+                        await _set_inv(isession, inv_url, inv=GPU_INV_DICT)
+                        trait_url = inv_url.replace('inventories', 'traits')
+                        async with aiohttp.ClientSession(
+                                headers=DEFAULT_HEADERS) as tsession:
+                            await _set_trait(tsession, trait_url, traits=traits)
             else:
                 print('R%s, %s' % (resp.status, uu), flush=True)
     except aiohttp.client_exceptions.ClientError as exc:
